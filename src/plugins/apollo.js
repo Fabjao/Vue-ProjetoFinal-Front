@@ -18,7 +18,7 @@ const onLogin = async (apollo, token) => {
 }
 
 const link = new HttpLink({
-  uri: 'http://192.168.0.109:4000'
+  uri: 'http://localhost:4000'
 })
 
 const authLink = new ApolloLink((operation, forward) => {
