@@ -8,8 +8,8 @@
         <v-card>
           <v-card-text>
             <v-form>
-              <v-select name="account" label="Conta" prepend-icon="account_balance"></v-select>
-              <v-select name="category" label="Categoria" prepend-icon="class"></v-select>
+              <v-select name="account" label="Conta" prepend-icon="account_balance" :items="accounts"></v-select>
+              <v-select name="category" label="Categoria" prepend-icon="class" :items="categories"></v-select>
               <v-text-field
                 name="description"
                 label="Descrição"
@@ -35,10 +35,16 @@
 import { mapActions } from "vuex";
 import moment from "moment";
 import { decimal, minLength, required } from "vuelidate/lib/validators";
+
+import AccountService from "./../services/accounts-service";
+import CategoriesService from "./../services/categories-services";
+
 export default {
   name: "RecordsAdd",
   data() {
     return {
+      accounts: [],
+      categories: [],
       record: {
         type: this.$route.query.type.toUpperCase(),
         amount: 0,
@@ -61,13 +67,18 @@ export default {
       description: { required, minLength: minLength(6) }
     }
   },
-  created() {
+  async created() {
     this.changeTitle(this.$route.query.type);
+    this.accounts = await AccountService.accounts();
+    this.categories = await CategoriesService.categories({
+      oepration: this.$route.query.type
+    });
   },
-  beforeRouteUpdate(to, from, next) {
+  async beforeRouteUpdate(to, from, next) {
     const { type } = to.query;
     this.changeTitle(type);
     this.record.type = type.toUpperCase();
+    this.categories = await CategoriesService.categories({ oepration: type });
     next();
   },
   methods: {

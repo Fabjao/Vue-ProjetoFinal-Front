@@ -89,7 +89,7 @@
             {{ error }}
             <v-btn
               color="pink"
-              flat="icon"
+              flat
               @click="showSnackbar = false"
             >
               <v-icon>close</v-icon>
