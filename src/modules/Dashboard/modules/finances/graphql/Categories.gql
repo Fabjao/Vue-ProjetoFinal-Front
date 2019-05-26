@@ -4,7 +4,8 @@ query Categories ($operation: Operation) {
   categories(operation: $operation) {
     id
     description
-    operationuser {
+    operation
+    user {
       id
       name
       email
