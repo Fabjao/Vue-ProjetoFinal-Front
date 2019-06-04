@@ -88,13 +88,20 @@
                 item-value="id"
                 v-model="$v.record.categoryId.$model"
               ></v-select>
-              <v-text-field
-                name="description"
-                label="Descrição"
-                prepend-icon="description"
-                type="text"
-                v-model.trim="$v.record.description.$model"
-              ></v-text-field>
+              <v-tooltip top>
+                <template v-slot:activator="{on}">
+                  <v-text-field
+                    name="description"
+                    label="Descrição"
+                    prepend-icon="description"
+                    type="text"
+                    v-model.trim="$v.record.description.$model"
+                    v-on="on"
+                  ></v-text-field>
+                </template>
+                <span>Minino 6 caracteres</span>
+              </v-tooltip>
+
               <v-text-field
                 name="tags"
                 label="Tags (separadas por vírgula)"
@@ -158,6 +165,7 @@
           fab
           class="mt-4"
           @click="submit"
+          :disabled="$v.$invalid"
         >
           <v-icon>check</v-icon>
         </v-btn>
@@ -173,6 +181,7 @@ import { decimal, minLength, required } from 'vuelidate/lib/validators'
 
 import AccountService from './../services/accounts-service'
 import CategoriesService from './../services/categories-services'
+import RecordsService from './../services/records-service'
 
 import NumericDisplay from './../components/NumericDisplay.vue'
 
@@ -229,6 +238,7 @@ export default {
   async created () {
     this.changeTitle(this.$route.query.type)
     this.accounts = await AccountService.accounts()
+
     this.categories = await CategoriesService.categories({
       operation: this.$route.query.type.toUpperCase()
     })
@@ -237,6 +247,7 @@ export default {
     const { type } = to.query
     this.changeTitle(type)
     this.record.type = type.toUpperCase()
+    this.record.categoryId = ''
     this.categories = await CategoriesService.categories({ oepration: type })
     next()
   },
@@ -260,8 +271,14 @@ export default {
       }
       this.setTitle({ title })
     },
-    submit () {
-      console.log('Form: ', this.record)
+    async submit () {
+      try {
+        const rec = await RecordsService.createRecord(this.record)
+        console.log('Rec ', rec)
+        this.$router.push('/dashboard/records')
+      } catch (error) {
+        console.log('Error creating Record: ', error)
+      }
     }
   }
 }
