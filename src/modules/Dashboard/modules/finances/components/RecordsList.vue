@@ -68,6 +68,9 @@ import amountColorMixin from './../mixins/amount-color'
 import ToolbarByMonth from './ToolbarByMonth.vue'
 import TotalBalance from './TotalBalance.vue'
 
+import { Subject, merge } from 'rxjs'
+import { mergeMap } from 'rxjs/operators'
+
 export default {
   name: 'RecordsList',
   components: {
@@ -80,12 +83,13 @@ export default {
     formatCurrencyMixin
   ],
   data: () => ({
-    records: []
+    records: [],
+    monthSubject$: new Subject()
   }),
   computed: {
     mappedRecords () {
       return groupBy(this.records, 'date', (record, dateKey) => {
-        return moment(record[dateKey]).format('DD/MM/YYYY')
+        return moment(record[dateKey].substr(0, 10)).format('DD/MM/YYYY')
       })
     },
     mappedRecordsLength () {
@@ -98,16 +102,25 @@ export default {
       return this.totalAmount < 0 ? 'error' : 'primary'
     }
   },
+  created () {
+    this.setRecords()
+  },
   methods: {
     async changeMonth (month) {
       this.$router.push({
         path: this.$route.path,
         query: { month }
       })
-      this.records = await RecordsService.records({ month })
+      //  this.records = await RecordsService.records({ month })
+      this.monthSubject$.next({ month })
     },
-    async setRecords (month) {
-      this.records = await RecordsService.records({ month })
+    setRecords (month) {
+      // (async foi comentado) this.records = await RecordsService.records({ month })
+      console.log('Subscribe...')
+      this.monthSubject$
+        .pipe(
+          mergeMap(variables => RecordsService.records(variables))
+        ).subscribe(records => (this.records = records))
     },
     showDivider (index, object) {
       return index < Object.keys(object).length - 1
