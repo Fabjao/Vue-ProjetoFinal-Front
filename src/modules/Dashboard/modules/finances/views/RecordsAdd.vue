@@ -14,6 +14,7 @@
           :color="color"
           v-model="$v.record.amount.$model"
         />
+
       </v-flex>
       <v-flex
         xs12
@@ -78,7 +79,23 @@
                 item-text="description"
                 item-value="id"
                 v-model="$v.record.accountId.$model"
-              ></v-select>
+              >
+                <v-list-tile
+                  slot="prepend-item"
+                  ripple
+                  @click="add('account')"
+                >
+                  <v-list-tile-action>
+                    <v-icon>add</v-icon>
+                  </v-list-tile-action>
+                  <v-list-tile-title>Conta</v-list-tile-title>
+                </v-list-tile>
+                <v-divider
+                  slot="prepend-item"
+                  class="mt-2"
+                >
+                </v-divider>
+              </v-select>
               <v-select
                 name="category"
                 label="Categoria"
@@ -87,7 +104,23 @@
                 item-text="description"
                 item-value="id"
                 v-model="$v.record.categoryId.$model"
-              ></v-select>
+              >
+                <v-list-tile
+                  slot="prepend-item"
+                  ripple
+                  @click="add('category')"
+                >
+                  <v-list-tile-action>
+                    <v-icon>add</v-icon>
+                  </v-list-tile-action>
+                  <v-list-tile-title>categoria</v-list-tile-title>
+                </v-list-tile>
+                <v-divider
+                  slot="prepend-item"
+                  class="mt-2"
+                >
+                </v-divider>
+              </v-select>
               <v-tooltip top>
                 <template v-slot:activator="{on}">
                   <v-text-field
@@ -169,6 +202,19 @@
         >
           <v-icon>check</v-icon>
         </v-btn>
+
+        <v-dialog
+          v-model="shoAccountCategoryDialog"
+          max-width="350px"
+        >
+          <AccountCategoryAdd
+            v-if="shoAccountCategoryDialog"
+            :entity="entity"
+            @close="shoAccountCategoryDialog = false"
+            @saved="accountCategorySaved"
+          />
+        </v-dialog>
+
       </v-flex>
     </v-layout>
   </v-container>
@@ -178,23 +224,29 @@
 import { mapActions } from 'vuex'
 import moment from 'moment'
 import { decimal, minLength, required } from 'vuelidate/lib/validators'
-
+import { Subject } from 'rxjs'
+import { distinctUntilChanged, mergeMap } from 'rxjs/operators'
 import AccountService from './../services/accounts-service'
 import CategoriesService from './../services/categories-services'
 import RecordsService from './../services/records-service'
 
 import NumericDisplay from './../components/NumericDisplay.vue'
 
+import AccountCategoryAdd from './../components/AccountCategoryAdd.vue'
+
 export default {
   name: 'RecordsAdd',
   components: {
-    NumericDisplay
+    NumericDisplay,
+    AccountCategoryAdd
   },
   data () {
     return {
       accounts: [],
       categories: [],
       dateDialogValue: moment().format('YYYY-MM-DD'),
+      entity: '',
+      operationSubject$: new Subject(),
       record: {
         type: this.$route.query.type.toUpperCase(),
         amount: 0,
@@ -205,6 +257,7 @@ export default {
         tags: '',
         note: ''
       },
+      shoAccountCategoryDialog: false,
       showDateDialog: false,
       showNoteInput: false,
       showTagsInput: false
@@ -237,22 +290,34 @@ export default {
   },
   async created () {
     this.changeTitle(this.$route.query.type)
-    this.accounts = await AccountService.accounts()
+    AccountService.accounts()
+      .subscribe(accounts => (this.accounts = accounts))
 
-    this.categories = await CategoriesService.categories({
-      operation: this.$route.query.type.toUpperCase()
-    })
+    this.operationSubject$
+      .pipe(
+        distinctUntilChanged(),
+        mergeMap(operation => CategoriesService.categories({ operation }))
+      ).subscribe(categories => (this.categories = categories))
+    this.operationSubject$.next(this.$route.query.type)
   },
   async beforeRouteUpdate (to, from, next) {
     const { type } = to.query
     this.changeTitle(type)
     this.record.type = type.toUpperCase()
     this.record.categoryId = ''
-    this.categories = await CategoriesService.categories({ oepration: type })
+    this.operationSubject$.next(type)
     next()
   },
   methods: {
     ...mapActions(['setTitle']),
+    accountCategorySaved (item) {
+      this.shoAccountCategoryDialog = false
+      this.record[`${this.entity}Id`] = item.id
+    },
+    add (entity) {
+      this.shoAccountCategoryDialog = true
+      this.entity = entity
+    },
     cancelarDialog () {
       this.showDateDialog = false
       this.dateDialogValue = this.record.date
