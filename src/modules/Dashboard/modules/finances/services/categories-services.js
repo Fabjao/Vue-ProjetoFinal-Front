@@ -22,6 +22,7 @@ const createCategory = async variables => {
     variables,
     update: (proxy, { data: { createCategory } }) => {
       try {
+        console.log('dentro do update')
         const variables = { operation: createCategory.operation }
         const data = proxy.readQuery({
           query: CategoriesQuery,

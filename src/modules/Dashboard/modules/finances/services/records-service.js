@@ -2,6 +2,7 @@ import apollo from '@/plugins/apollo'
 import moment from 'moment'
 import { from } from 'rxjs'
 import { map } from 'rxjs/operators'
+import md5 from 'md5'
 
 import RecordCreateMutation from './../graphql/RecordCreate.gql'
 import RecordsQuery from './../graphql/Records.gql'
@@ -58,11 +59,22 @@ const createRecord = async variables => {
   return response.data.createRecord
 }
 
+const recordsWatchedQueries = {}
+
 const records = variables => {
-  const queryRef = apollo.watchQuery({
-    query: RecordsQuery,
-    variables
-  })
+  const haskey = md5(Object
+    .keys(variables)
+    .map(k => variables[k]).join('_'))
+
+  let queryRef = recordsWatchedQueries[haskey]
+  if (!queryRef) {
+    queryRef = apollo.watchQuery({
+      query: RecordsQuery,
+      variables
+    })
+    recordsWatchedQueries[haskey] = queryRef
+  }
+
   return from(queryRef)
     .pipe(
       map(res => res.data.records)

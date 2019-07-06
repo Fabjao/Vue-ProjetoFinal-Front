@@ -84,7 +84,8 @@ export default {
   ],
   data: () => ({
     records: [],
-    monthSubject$: new Subject()
+    monthSubject$: new Subject(),
+    subscriptions: []
   }),
   computed: {
     mappedRecords () {
@@ -105,6 +106,9 @@ export default {
   created () {
     this.setRecords()
   },
+  destroyed () {
+    this.subscriptions.forEach(s => s.unsubscribe())
+  },
   methods: {
     async changeMonth (month) {
       this.$router.push({
@@ -116,11 +120,13 @@ export default {
     },
     setRecords (month) {
       // (async foi comentado) this.records = await RecordsService.records({ month })
-      console.log('Subscribe...')
-      this.monthSubject$
-        .pipe(
-          mergeMap(variables => RecordsService.records(variables))
-        ).subscribe(records => (this.records = records))
+
+      this.subscriptions.push(
+        this.monthSubject$
+          .pipe(
+            mergeMap(variables => RecordsService.records(variables))
+          ).subscribe(records => (this.records = records))
+      )
     },
     showDivider (index, object) {
       return index < Object.keys(object).length - 1

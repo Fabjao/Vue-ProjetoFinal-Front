@@ -1,8 +1,8 @@
 # import * from './Operation.gql'
 
-mutation CategoryCreate ($description: String!,$operation: Operation){
+mutation CategoryCreate ($description: String!,$operation: Operation!){
   createCategory(description:$description, operation:$operation){
-    id
+   id
     description
     operation
     user {
