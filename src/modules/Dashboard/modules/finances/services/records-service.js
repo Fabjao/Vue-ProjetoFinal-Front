@@ -74,7 +74,6 @@ const records = variables => {
     })
     recordsWatchedQueries[haskey] = queryRef
   }
-
   return from(queryRef)
     .pipe(
       map(res => res.data.records)
